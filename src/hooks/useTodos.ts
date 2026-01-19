@@ -15,7 +15,7 @@ export function useTodos() {
 
   const addTodoMutation = useMutation({
     mutationFn: async (
-      todoData: Omit<Todo, "id" | "created_at" | "updated_at" | "deleted_at">
+      todoData: Omit<Todo, "id" | "created_at" | "updated_at" | "deleted_at">,
     ) => {
       const now = new Date().toISOString();
       const newTodo: Todo = {
@@ -39,10 +39,22 @@ export function useTodos() {
       id: EntityId;
       is_completed: boolean;
     }) => {
+      const now = new Date().toISOString();
+
+      // Update the todo
       await todoRepo.update(id, {
         is_completed,
-        updated_at: new Date().toISOString(),
+        completed_at: is_completed ? now : null,
+        updated_at: now,
       });
+
+      // If completing, add to history
+      if (is_completed) {
+        await todoRepo.addHistory(id, {
+          id: Crypto.randomUUID(),
+          completed_at: now,
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["todos"] });

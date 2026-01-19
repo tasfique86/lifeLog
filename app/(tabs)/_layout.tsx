@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { Tabs } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import React from "react";
 import {
   Platform,
@@ -76,121 +77,124 @@ export default function TabLayout() {
   const { mode } = useThemeStore();
   const systemScheme = useColorScheme();
 
-  const activeScheme = mode === "system" ? systemScheme ?? "light" : mode;
+  const activeScheme = mode === "system" ? (systemScheme ?? "light") : mode;
   const activeColors = Colors[activeScheme];
   const isDark = activeScheme === "dark";
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarShowLabel: false,
+    <>
+      <StatusBar style={isDark ? "light" : "dark"} />
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarShowLabel: false,
 
-        tabBarStyle: {
-          position: "absolute",
-          bottom: Platform.OS === "ios" ? 30 : 20,
-          marginHorizontal: 20,
-          height: 80,
-          borderRadius: 50,
-          backgroundColor: "transparent",
+          tabBarStyle: {
+            position: "absolute",
+            bottom: Platform.OS === "ios" ? 30 : 20,
+            marginHorizontal: 20,
+            height: 80,
+            borderRadius: 50,
+            backgroundColor: "transparent",
 
-          borderWidth: Platform.OS === "android" ? 0.6 : 0,
-          borderColor: isDark ? "#334155" : "#BFDBFE",
+            borderWidth: Platform.OS === "android" ? 0.6 : 0,
+            borderColor: isDark ? "#334155" : "#BFDBFE",
 
-          elevation: 5,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-        },
+            elevation: 5,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+          },
 
-        // 🔑 THIS IS THE REAL FIX
-        tabBarItemStyle: {
-          height: 80,
-          justifyContent: "center",
-          alignItems: "center",
-        },
+          // 🔑 THIS IS THE REAL FIX
+          tabBarItemStyle: {
+            height: 80,
+            justifyContent: "center",
+            alignItems: "center",
+          },
 
-        tabBarBackground: () => (
-          <View style={styles.blurWrapper}>
-            <BlurView
-              intensity={Platform.OS === "android" ? 40 : 80}
-              tint={isDark ? "dark" : "light"}
-              style={StyleSheet.absoluteFill}
-            />
-            <View
-              style={[
-                StyleSheet.absoluteFill,
-                {
-                  backgroundColor: isDark
-                    ? "rgba(30,41,59,0.5)"
-                    : "rgba(255,255,255,0.4)",
-                },
-              ]}
-            />
-          </View>
-        ),
-
-        tabBarActiveTintColor: activeColors.primary,
-        tabBarInactiveTintColor: activeColors.textSecondary,
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          tabBarButton: CustomTabBarButton,
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon
-              focused={focused}
-              name={focused ? "grid" : "grid-outline"}
-              color={color}
-            />
+          tabBarBackground: () => (
+            <View style={styles.blurWrapper}>
+              <BlurView
+                intensity={Platform.OS === "android" ? 40 : 80}
+                tint={isDark ? "dark" : "light"}
+                style={StyleSheet.absoluteFill}
+              />
+              <View
+                style={[
+                  StyleSheet.absoluteFill,
+                  {
+                    backgroundColor: isDark
+                      ? "rgba(30,41,59,0.5)"
+                      : "rgba(255,255,255,0.4)",
+                  },
+                ]}
+              />
+            </View>
           ),
-        }}
-      />
 
-      <Tabs.Screen
-        name="todos"
-        options={{
-          tabBarButton: CustomTabBarButton,
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon
-              focused={focused}
-              name={focused ? "checkmark-circle" : "checkmark-circle-outline"}
-              color={color}
-            />
-          ),
+          tabBarActiveTintColor: activeColors.primary,
+          tabBarInactiveTintColor: activeColors.textSecondary,
         }}
-      />
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            tabBarButton: CustomTabBarButton,
+            tabBarIcon: ({ color, focused }) => (
+              <TabBarIcon
+                focused={focused}
+                name={focused ? "grid" : "grid-outline"}
+                color={color}
+              />
+            ),
+          }}
+        />
 
-      <Tabs.Screen
-        name="expenses"
-        options={{
-          tabBarButton: CustomTabBarButton,
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon
-              focused={focused}
-              name={focused ? "wallet" : "wallet-outline"}
-              color={color}
-            />
-          ),
-        }}
-      />
+        <Tabs.Screen
+          name="todos"
+          options={{
+            tabBarButton: CustomTabBarButton,
+            tabBarIcon: ({ color, focused }) => (
+              <TabBarIcon
+                focused={focused}
+                name={focused ? "checkmark-circle" : "checkmark-circle-outline"}
+                color={color}
+              />
+            ),
+          }}
+        />
 
-      <Tabs.Screen
-        name="plans"
-        options={{
-          tabBarButton: CustomTabBarButton,
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon
-              focused={focused}
-              name={focused ? "calendar" : "calendar-outline"}
-              color={color}
-            />
-          ),
-        }}
-      />
-    </Tabs>
+        <Tabs.Screen
+          name="expenses"
+          options={{
+            tabBarButton: CustomTabBarButton,
+            tabBarIcon: ({ color, focused }) => (
+              <TabBarIcon
+                focused={focused}
+                name={focused ? "wallet" : "wallet-outline"}
+                color={color}
+              />
+            ),
+          }}
+        />
+
+        <Tabs.Screen
+          name="plans"
+          options={{
+            tabBarButton: CustomTabBarButton,
+            tabBarIcon: ({ color, focused }) => (
+              <TabBarIcon
+                focused={focused}
+                name={focused ? "calendar" : "calendar-outline"}
+                color={color}
+              />
+            ),
+          }}
+        />
+      </Tabs>
+    </>
   );
 }
 

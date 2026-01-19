@@ -17,7 +17,7 @@ export class SqliteTodoRepository implements TodoRepository {
     const db = await this.getDatabase();
     // Only fetch non-deleted items
     const result = await db.getAllAsync<Todo>(
-      "SELECT * FROM todos WHERE deleted_at IS NULL ORDER BY created_at DESC"
+      "SELECT * FROM todos WHERE deleted_at IS NULL ORDER BY created_at DESC",
     );
     return result;
   }
@@ -26,7 +26,7 @@ export class SqliteTodoRepository implements TodoRepository {
     const db = await this.getDatabase();
     const result = await db.getFirstAsync<Todo>(
       "SELECT * FROM todos WHERE id = ? AND deleted_at IS NULL",
-      [id]
+      [id],
     );
     return result || null;
   }
@@ -34,8 +34,8 @@ export class SqliteTodoRepository implements TodoRepository {
   async create(todo: Todo): Promise<void> {
     const db = await this.getDatabase();
     await db.runAsync(
-      `INSERT INTO todos (id, title, description, due_date, is_completed, priority, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO todos (id, title, description, due_date, is_completed, priority, recurring_rule, tags, category_id, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         todo.id,
         todo.title,
@@ -43,9 +43,12 @@ export class SqliteTodoRepository implements TodoRepository {
         todo.due_date ?? null,
         todo.is_completed ? 1 : 0,
         todo.priority,
+        todo.recurring_rule ?? null,
+        todo.tags ?? null,
+        todo.category_id ?? null,
         todo.created_at,
         todo.updated_at,
-      ]
+      ],
     );
   }
 
@@ -79,7 +82,41 @@ export class SqliteTodoRepository implements TodoRepository {
     const now = new Date().toISOString();
     await db.runAsync(
       "UPDATE todos SET deleted_at = ?, updated_at = ? WHERE id = ?",
-      [now, now, id]
+      [now, now, id],
+    );
+  }
+  async addHistory(
+    todoId: EntityId,
+    entry: { id: string; completed_at: string; notes?: string },
+  ): Promise<void> {
+    const db = await this.getDatabase();
+    const now = new Date().toISOString();
+    await db.runAsync(
+      `INSERT INTO todo_history (id, todo_id, completed_at, notes, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [entry.id, todoId, entry.completed_at, entry.notes ?? null, now, now],
+    );
+  }
+  async getCompletedRecurringTasks(type: string): Promise<Todo[]> {
+    const db = await this.getDatabase();
+    // Fetch completed tasks with specific recurring rule
+    // Note: This matches exact string 'daily'. Ideally, we might parse rules, but for now 'daily' is the implementation.
+    return await db.getAllAsync<Todo>(
+      "SELECT * FROM todos WHERE recurring_rule = ? AND is_completed = 1 AND deleted_at IS NULL",
+      [type],
+    );
+  }
+
+  async resetTasks(ids: EntityId[]): Promise<void> {
+    if (ids.length === 0) return;
+    const db = await this.getDatabase();
+    const now = new Date().toISOString();
+
+    const placeholders = ids.map(() => "?").join(",");
+    // Reset is_completed to 0, clear completed_at
+    await db.runAsync(
+      `UPDATE todos SET is_completed = 0, completed_at = NULL, updated_at = ? WHERE id IN (${placeholders})`,
+      [now, ...ids],
     );
   }
 }

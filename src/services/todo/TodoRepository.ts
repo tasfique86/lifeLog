@@ -6,4 +6,8 @@ export interface TodoRepository {
   create(todo: Todo): Promise<void>;
   update(id: EntityId, updates: Partial<Todo>): Promise<void>;
   delete(id: EntityId): Promise<void>; // Soft delete
+  addHistory(
+    todoId: EntityId,
+    entry: { id: string; completed_at: string; notes?: string },
+  ): Promise<void>;
 }

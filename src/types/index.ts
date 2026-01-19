@@ -13,6 +13,16 @@ export interface Todo extends BaseEntity {
   due_date?: string; // ISO Date
   is_completed: boolean;
   priority: 1 | 2 | 3; // 1 = Low, 2 = Medium, 3 = High
+  completed_at?: string | null; // ISO Date of completion
+  recurring_rule?: string | null; // e.g., 'daily', 'weekly'
+  tags?: string; // Comma-separated tags
+  category_id?: EntityId; // Link to Category
+}
+
+export interface TodoHistory extends BaseEntity {
+  todo_id: EntityId;
+  completed_at: string;
+  notes?: string;
 }
 
 export interface Category extends BaseEntity {

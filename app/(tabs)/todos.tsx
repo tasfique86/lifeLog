@@ -9,6 +9,7 @@ import {
   FlatList,
   Modal,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -25,17 +26,22 @@ export default function TodosScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState<1 | 2 | 3>(1);
+  const [isRecurring, setIsRecurring] = useState(false);
 
   const handleCreate = () => {
     if (!title.trim()) return;
     addTodo({
       title,
       description,
-      priority: 1, // Default to Low
+      priority,
       is_completed: false,
+      recurring_rule: isRecurring ? "daily" : null,
     });
     setTitle("");
     setDescription("");
+    setPriority(1);
+    setIsRecurring(false);
     setModalVisible(false);
   };
   const renderItem = ({ item }: { item: Todo }) => (
@@ -123,6 +129,50 @@ export default function TodosScreen() {
               onChangeText={setDescription}
             />
 
+            {/* Priority Selector */}
+            <View style={styles.optionRow}>
+              <Text style={[styles.optionLabel, { color: activeColors.text }]}>
+                Priority
+              </Text>
+              <View style={styles.priorityContainer}>
+                {[1, 2, 3].map((p) => (
+                  <TouchableOpacity
+                    key={p}
+                    onPress={() => setPriority(p as 1 | 2 | 3)}
+                    style={[
+                      styles.priorityBtn,
+                      priority === p && {
+                        backgroundColor: activeColors.primary,
+                      },
+                      { borderColor: activeColors.border },
+                    ]}
+                  >
+                    <Text
+                      style={{
+                        color: priority === p ? "#FFF" : activeColors.text,
+                        fontWeight: "600",
+                      }}
+                    >
+                      {p === 1 ? "Low" : p === 2 ? "Med" : "High"}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Recurring Toggle */}
+            <View style={styles.optionRow}>
+              <Text style={[styles.optionLabel, { color: activeColors.text }]}>
+                Repeat Daily
+              </Text>
+              <Switch
+                value={isRecurring}
+                onValueChange={setIsRecurring}
+                trackColor={{ false: "#767577", true: activeColors.primary }}
+                thumbColor={isRecurring ? "#fff" : "#f4f3f4"}
+              />
+            </View>
+
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 onPress={() => setModalVisible(false)}
@@ -148,6 +198,8 @@ export default function TodosScreen() {
     </SafeAreaView>
   );
 }
+
+// ... helper components or styles ...
 
 const styles = StyleSheet.create({
   container: {
@@ -203,5 +255,25 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
+  },
+  optionRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  optionLabel: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  priorityContainer: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  priorityBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
   },
 });

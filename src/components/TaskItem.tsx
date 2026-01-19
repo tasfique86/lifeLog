@@ -38,7 +38,7 @@ export function TaskItem({
 }: TaskItemProps) {
   const { mode } = useThemeStore();
   const systemScheme = useColorScheme(); // Ensure reactivity to system changes
-  const activeScheme = mode === "system" ? systemScheme ?? "light" : mode;
+  const activeScheme = mode === "system" ? (systemScheme ?? "light") : mode;
   const theme = Colors[activeScheme];
 
   const translateX = useSharedValue(0);
@@ -115,7 +115,7 @@ export function TaskItem({
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    }
+    },
   );
 
   return (
@@ -146,16 +146,18 @@ export function TaskItem({
               colors={
                 activeScheme === "dark"
                   ? !!todo.is_completed
-                    ? ["#38BDF8", "transparent", "transparent", "#38BDF8"] // Sky Blue for Completed
+                    ? [theme.success, theme.success] // Green Border for Completed
                     : ["#22c55e", "transparent", "transparent", "#ef4444"] // Green/Red for Active
                   : ["transparent", "transparent"]
               }
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
               locations={
-                !!todo.is_completed
-                  ? [0, 1, 1, 1] // Symmetric Blue Glow (40% each side)
-                  : [0, 0.95, 0.95, 1] // Asymmetric Green/Red Active
+                activeScheme === "dark"
+                  ? !!todo.is_completed
+                    ? [0, 1] // Solid Border (Matches 2 colors)
+                    : [0, 0.95, 0.95, 1] // Asymmetric Green/Red Active (Matches 4 colors)
+                  : [0, 1] // Transparent (Matches 2 colors: ["transparent", "transparent"])
               }
               style={[
                 styles.glowContainer,
@@ -196,7 +198,6 @@ export function TaskItem({
                     {formattedDate}
                   </Text>
                 </View>
-
                 {onLongPress && !todo.is_completed && (
                   <Pressable
                     onPress={() => onLongPress(todo)}
@@ -214,6 +215,20 @@ export function TaskItem({
                       color={theme.textSecondary}
                     />
                   </Pressable>
+                )}
+                {!!todo.is_completed && (
+                  <View
+                    style={[
+                      styles.editButton,
+                      { backgroundColor: "transparent" },
+                    ]}
+                  >
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={24}
+                      color={theme.success}
+                    />
+                  </View>
                 )}
               </LinearGradient>
             </LinearGradient>

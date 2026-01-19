@@ -20,6 +20,20 @@ erDiagram
         string due_date
         int is_completed
         int priority
+        string completed_at
+        string recurring_rule
+        string tags
+        string category_id FK
+        string created_at
+        string updated_at
+        string deleted_at
+    }
+
+    TODO_HISTORY {
+        string id PK
+        string todo_id FK
+        string completed_at
+        string notes
         string created_at
         string updated_at
         string deleted_at
@@ -49,6 +63,8 @@ erDiagram
     }
 
     CATEGORIES ||--o{ TRANSACTIONS : "has many"
+    CATEGORIES ||--o{ TODOS : "categorizes"
+    TODOS ||--o{ TODO_HISTORY : "logs completion"
 ```
 
 ## Tables
@@ -57,19 +73,37 @@ erDiagram
 
 Stores daily tasks and to-do items.
 
-| Column         | Type        | Description                          |
-| :------------- | :---------- | :----------------------------------- |
-| `id`           | `TEXT` (PK) | Unique UUID.                         |
-| `title`        | `TEXT`      | The main task name.                  |
-| `description`  | `TEXT`      | Optional details.                    |
-| `due_date`     | `TEXT`      | ISO 8601 Date string.                |
-| `is_completed` | `INTEGER`   | `0` for pending, `1` for done.       |
-| `priority`     | `INTEGER`   | `1` (Low), `2` (Medium), `3` (High). |
-| `created_at`   | `TEXT`      | Creation timestamp.                  |
-| `updated_at`   | `TEXT`      | Last update timestamp.               |
-| `deleted_at`   | `TEXT`      | If present, the item is trash.       |
+| Column           | Type        | Description                               |
+| :--------------- | :---------- | :---------------------------------------- |
+| `id`             | `TEXT` (PK) | Unique UUID.                              |
+| `title`          | `TEXT`      | The main task name.                       |
+| `description`    | `TEXT`      | Optional details.                         |
+| `due_date`       | `TEXT`      | ISO 8601 Date string.                     |
+| `is_completed`   | `INTEGER`   | `0` for pending, `1` for done.            |
+| `priority`       | `INTEGER`   | `1` (Low), `2` (Medium), `3` (High).      |
+| `completed_at`   | `TEXT`      | Timestamp when marked done. **(New)**     |
+| `recurring_rule` | `TEXT`      | Frequency rule (e.g., 'daily'). **(New)** |
+| `tags`           | `TEXT`      | Comma-separated tags. **(New)**           |
+| `category_id`    | `TEXT` (FK) | Links to `categories(id)`. **(New)**      |
+| `created_at`     | `TEXT`      | Creation timestamp.                       |
+| `updated_at`     | `TEXT`      | Last update timestamp.                    |
+| `deleted_at`     | `TEXT`      | If present, the item is trash.            |
 
-### 2. `categories`
+### 2. `todo_history`
+
+Tracks completion logs for streaks and analytics.
+
+| Column         | Type        | Description                   |
+| :------------- | :---------- | :---------------------------- |
+| `id`           | `TEXT` (PK) | Unique UUID.                  |
+| `todo_id`      | `TEXT` (FK) | References `todos(id)`.       |
+| `completed_at` | `TEXT`      | When the task was completed.  |
+| `notes`        | `TEXT`      | Optional notes on completion. |
+| `created_at`   | `TEXT`      | Creation timestamp.           |
+| `updated_at`   | `TEXT`      | Last update timestamp.        |
+| `deleted_at`   | `TEXT`      | Soft delete timestamp.        |
+
+### 3. `categories`
 
 Categories for income and expenses.
 
@@ -84,7 +118,7 @@ Categories for income and expenses.
 | `updated_at` | `TEXT`      | Last update timestamp.     |
 | `deleted_at` | `TEXT`      | Soft delete timestamp.     |
 
-### 3. `transactions`
+### 4. `transactions`
 
 Financial records linked to categories.
 
