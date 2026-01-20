@@ -37,10 +37,11 @@ export function TaskItem({
   onLongPress,
 }: TaskItemProps) {
   const { mode } = useThemeStore();
-  const systemScheme = useColorScheme(); // Ensure reactivity to system changes
+  const systemScheme = useColorScheme();
   const activeScheme = mode === "system" ? (systemScheme ?? "light") : mode;
   const theme = Colors[activeScheme];
 
+  /* ------------------ Animations ------------------ */
   const translateX = useSharedValue(0);
   const itemHeight = useSharedValue(80);
   const opacity = useSharedValue(1);
@@ -50,15 +51,14 @@ export function TaskItem({
   const completeThreshold = SCREEN_WIDTH * 0.3;
 
   const pan = Gesture.Pan()
-    .enabled(!todo.is_completed) // Disable swipe when completed
-    .activeOffsetX([-10, 10]) // Only activate if moved 10px horizontally
-    .failOffsetY([-5, 5]) // Fail if moved 5px vertically (allows scrolling)
-    .onChange((event) => {
-      translateX.value = event.translationX;
+    .enabled(!todo.is_completed)
+    .activeOffsetX([-10, 10])
+    .failOffsetY([-5, 5])
+    .onChange((e) => {
+      translateX.value = e.translationX;
     })
     .onFinalize(() => {
       if (translateX.value < deleteThreshold) {
-        // Delete (Left Swipe)
         translateX.value = withTiming(-SCREEN_WIDTH, {}, () => {
           runOnJS(onDelete)(todo.id);
         });
@@ -66,8 +66,7 @@ export function TaskItem({
         marginVertical.value = withTiming(0);
         opacity.value = withTiming(0);
       } else if (translateX.value > completeThreshold) {
-        // Complete/Toggle (Right Swipe)
-        translateX.value = withSpring(0); // Bounce back
+        translateX.value = withSpring(0);
         runOnJS(onToggle)(todo.id, todo.is_completed);
       } else {
         translateX.value = withSpring(0);
@@ -84,165 +83,123 @@ export function TaskItem({
     opacity: opacity.value,
   }));
 
-  const rIconStyleDelete = useAnimatedStyle(() => {
-    const scale = translateX.value < deleteThreshold ? 1.2 : 0.8;
-    const opacity = translateX.value < 0 ? 1 : 0;
-    return {
-      transform: [{ scale: withSpring(scale) }],
-      opacity,
-    };
-  });
+  const rBackgroundStyle = useAnimatedStyle(() => ({
+    backgroundColor: translateX.value > 0 ? theme.success : theme.error,
+  }));
 
-  const rIconStyleComplete = useAnimatedStyle(() => {
-    const scale = translateX.value > completeThreshold ? 1.2 : 0.8;
-    const opacity = translateX.value > 0 ? 1 : 0;
-    return {
-      transform: [{ scale: withSpring(scale) }],
-      opacity,
-    };
-  });
+  /* ------------------ Helpers ------------------ */
+  const getSmartTime = (dateString?: string) => {
+    if (!dateString) return null;
 
-  const rBackgroundStyle = useAnimatedStyle(() => {
-    const isRight = translateX.value > 0;
-    return {
-      backgroundColor: isRight ? theme.success : theme.error,
-    };
-  });
-
-  // Smart Date Formatting
-  const getSmartDate = (dateString?: string) => {
-    if (!dateString) return "";
     const date = new Date(dateString);
-    const now = new Date();
-    const isToday =
-      date.getDate() === now.getDate() &&
-      date.getMonth() === now.getMonth() &&
-      date.getFullYear() === now.getFullYear();
-
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const isTomorrow =
-      date.getDate() === tomorrow.getDate() &&
-      date.getMonth() === tomorrow.getMonth() &&
-      date.getFullYear() === tomorrow.getFullYear();
-
-    const timeStr = date.toLocaleTimeString(undefined, {
+    return date.toLocaleTimeString(undefined, {
       hour: "2-digit",
       minute: "2-digit",
     });
-
-    return timeStr; // Simply return time for daily focus
   };
 
-  const displayDate = todo.due_date ? getSmartDate(todo.due_date) : ""; // Don't show created date if no due time is set, to keep it clean
+  const displayTime = getSmartTime(todo.due_date);
 
   const isOverdue =
-    todo.due_date && !todo.is_completed && new Date(todo.due_date) < new Date();
+    !!todo.due_date &&
+    !todo.is_completed &&
+    new Date(todo.due_date) < new Date();
 
   const getPriorityColor = (p: number) => {
     switch (p) {
       case 3:
-        return theme.error; // High
+        return theme.error;
       case 2:
-        return theme.warning; // Medium
+        return theme.warning;
       default:
-        return theme.success; // Low
+        return theme.success;
     }
   };
 
+  /* ------------------ Render ------------------ */
   return (
     <Animated.View style={[styles.containerWrapper, rContainerStyle]}>
+      {/* Swipe background */}
       <Animated.View style={[styles.iconContainer, rBackgroundStyle]}>
-        <Animated.View
-          style={[{ position: "absolute", left: 24 }, rIconStyleComplete]}
-        >
-          <Ionicons name="checkmark-circle-outline" size={32} color="white" />
-        </Animated.View>
-        <Animated.View
-          style={[{ position: "absolute", right: 24 }, rIconStyleDelete]}
-        >
-          <Ionicons name="trash-outline" size={32} color="white" />
-        </Animated.View>
+        <Ionicons
+          name="trash-outline"
+          size={28}
+          color="white"
+          style={{ position: "absolute", right: 24 }}
+        />
+        <Ionicons
+          name="checkmark-circle-outline"
+          size={28}
+          color="white"
+          style={{ position: "absolute", left: 24 }}
+        />
       </Animated.View>
+
       <GestureDetector gesture={pan}>
         <Animated.View style={[styles.taskContainer, rStyle]}>
           <Pressable
             onLongPress={() => onLongPress?.(todo)}
             delayLongPress={200}
-            disabled={!!todo.is_completed} // Disable edit on long press
+            disabled={!!todo.is_completed}
             style={{ flex: 1 }}
           >
-            {/* Neon Glow Container - Only Visible in Dark Mode */}
+            {/* Glow Border */}
             <LinearGradient
-              key={`glow-${todo.id}-${todo.is_completed}`} // Force re-render on toggle
               colors={
                 activeScheme === "dark"
-                  ? !!todo.is_completed
-                    ? [theme.success, theme.success] // Green Border for Completed
-                    : ["#22c55e", "transparent", "transparent", "#ef4444"] // Green/Red for Active
+                  ? todo.is_completed
+                    ? [theme.success, theme.success]
+                    : ["#22c55e", "transparent", "transparent", "#ef4444"]
                   : ["transparent", "transparent"]
+              }
+              locations={
+                activeScheme === "dark"
+                  ? todo.is_completed
+                    ? [0, 1]
+                    : [0, 0.95, 0.95, 1]
+                  : [0, 1]
               }
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
-              locations={
-                activeScheme === "dark"
-                  ? !!todo.is_completed
-                    ? [0, 1] // Solid Border (Matches 2 colors)
-                    : [0, 0.95, 0.95, 1] // Asymmetric Green/Red Active (Matches 4 colors)
-                  : [0, 1] // Transparent (Matches 2 colors: ["transparent", "transparent"])
-              }
               style={[
                 styles.glowContainer,
                 {
-                  padding: activeScheme === "dark" ? 1.5 : 0, // Thickness of the neon border
-                  // borderRadius: 17, // Slightly larger than inner
-                  opacity: activeScheme === "dark" ? 0.9 : 1,
-                  borderWidth: activeScheme === "dark" ? 0 : 1, // Use standard border for light mode
+                  padding: activeScheme === "dark" ? 1.5 : 0,
                   borderColor: theme.border,
+                  borderWidth: activeScheme === "dark" ? 0 : 1,
                 },
               ]}
             >
+              {/* Card */}
               <LinearGradient
                 colors={[theme.card, theme.background]}
-                style={styles.gradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+                style={styles.card}
               >
+                {/* Left */}
                 <View style={styles.textContainer}>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 8,
-                    }}
-                  >
-                    {/* Priority Circle Indicator */}
+                  <View style={styles.titleRow}>
                     <View
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: 5,
-                        backgroundColor: getPriorityColor(todo.priority),
-                      }}
-                    />
-
-                    <Text
                       style={[
-                        styles.text,
+                        styles.priorityDot,
+                        { backgroundColor: getPriorityColor(todo.priority) },
+                      ]}
+                    />
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        styles.title,
                         {
                           color: theme.text,
                           textDecorationLine: todo.is_completed
                             ? "line-through"
                             : "none",
                           opacity: todo.is_completed ? 0.6 : 1,
-                          flexShrink: 1,
                         },
                       ]}
-                      numberOfLines={1}
                     >
                       {todo.title}
                     </Text>
-                    {/* Recurring Icon */}
+
                     {todo.recurring_rule === "daily" && (
                       <Ionicons
                         name="repeat"
@@ -251,49 +208,42 @@ export function TaskItem({
                       />
                     )}
                   </View>
-                  <Text
-                    style={[
-                      styles.dateText,
-                      {
-                        color: isOverdue ? theme.error : theme.textSecondary,
-                        fontWeight: isOverdue ? "600" : "400",
-                      },
-                    ]}
-                  >
-                    {displayDate}
-                  </Text>
+
+                  {displayTime && (
+                    <Text
+                      style={[
+                        styles.time,
+                        {
+                          color: isOverdue ? theme.error : theme.textSecondary,
+                          fontWeight: isOverdue ? "600" : "400",
+                        },
+                      ]}
+                    >
+                      {displayTime}
+                    </Text>
+                  )}
                 </View>
-                {onLongPress && !todo.is_completed && (
-                  <Pressable
-                    onPress={() => onLongPress(todo)}
-                    style={({ pressed }) => [
-                      styles.editButton,
-                      {
-                        opacity: pressed ? 0.7 : 1,
-                        backgroundColor: theme.background,
-                      },
-                    ]}
-                  >
-                    <Ionicons
-                      name="create-outline"
-                      size={20}
-                      color={theme.textSecondary}
-                    />
-                  </Pressable>
-                )}
-                {!!todo.is_completed && (
-                  <View
-                    style={[
-                      styles.editButton,
-                      { backgroundColor: "transparent" },
-                    ]}
-                  >
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={24}
-                      color={theme.success}
-                    />
-                  </View>
+
+                {/* Right */}
+                {!!todo.is_completed ? (
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={24}
+                    color={theme.success}
+                  />
+                ) : (
+                  !!onLongPress && (
+                    <Pressable
+                      onPress={() => onLongPress(todo)}
+                      style={styles.editButton}
+                    >
+                      <Ionicons
+                        name="create-outline"
+                        size={20}
+                        color={theme.textSecondary}
+                      />
+                    </Pressable>
+                  )
                 )}
               </LinearGradient>
             </LinearGradient>
@@ -304,61 +254,57 @@ export function TaskItem({
   );
 }
 
+/* ------------------ Styles ------------------ */
 const styles = StyleSheet.create({
   containerWrapper: {
     overflow: "hidden",
-    marginBottom: 8,
   },
   taskContainer: {
     flex: 1,
-    height: "100%",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 2, // Android shadow
+    elevation: 2,
   },
   glowContainer: {
-    flex: 1, // Ensure it fills the Pressable area
+    flex: 1,
     borderRadius: 16,
     overflow: "hidden",
   },
-  gradient: {
+  card: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    borderRadius: 15, // Slightly smaller than parent
+    borderRadius: 15,
   },
   iconContainer: {
-    position: "absolute",
-    height: "100%",
-    width: "100%",
+    ...StyleSheet.absoluteFillObject,
     borderRadius: 16,
     justifyContent: "center",
-    alignItems: "center",
   },
   textContainer: {
     flex: 1,
     justifyContent: "center",
   },
-
-  text: {
-    fontSize: 17, // Larger font
-    fontWeight: "600",
-    marginBottom: 4,
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
-  dateText: {
+  priorityDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: "600",
+    flexShrink: 1,
+  },
+  time: {
     fontSize: 12,
-    fontWeight: "400",
-    opacity: 0.8,
+    marginTop: 2,
   },
   editButton: {
     padding: 8,
     borderRadius: 8,
-    marginLeft: 8,
   },
 });
