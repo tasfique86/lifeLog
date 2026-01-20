@@ -17,7 +17,13 @@ export class SqliteTodoRepository implements TodoRepository {
     const db = await this.getDatabase();
     // Only fetch non-deleted items
     const result = await db.getAllAsync<Todo>(
-      "SELECT * FROM todos WHERE deleted_at IS NULL ORDER BY created_at DESC",
+      `SELECT * FROM todos 
+       WHERE deleted_at IS NULL 
+       ORDER BY 
+         is_completed ASC, 
+         priority DESC, 
+         COALESCE(due_date, '9999-12-31') ASC, 
+         created_at DESC`,
     );
     return result;
   }

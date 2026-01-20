@@ -51,6 +51,8 @@ export function TaskItem({
 
   const pan = Gesture.Pan()
     .enabled(!todo.is_completed) // Disable swipe when completed
+    .activeOffsetX([-10, 10]) // Only activate if moved 10px horizontally
+    .failOffsetY([-5, 5]) // Fail if moved 5px vertically (allows scrolling)
     .onChange((event) => {
       translateX.value = event.translationX;
     })
@@ -107,16 +109,46 @@ export function TaskItem({
     };
   });
 
-  // Safe formatting for date
-  const formattedDate = new Date(todo.created_at).toLocaleDateString(
-    undefined,
-    {
-      month: "short",
-      day: "numeric",
+  // Smart Date Formatting
+  const getSmartDate = (dateString?: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const now = new Date();
+    const isToday =
+      date.getDate() === now.getDate() &&
+      date.getMonth() === now.getMonth() &&
+      date.getFullYear() === now.getFullYear();
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const isTomorrow =
+      date.getDate() === tomorrow.getDate() &&
+      date.getMonth() === tomorrow.getMonth() &&
+      date.getFullYear() === tomorrow.getFullYear();
+
+    const timeStr = date.toLocaleTimeString(undefined, {
       hour: "2-digit",
       minute: "2-digit",
-    },
-  );
+    });
+
+    return timeStr; // Simply return time for daily focus
+  };
+
+  const displayDate = todo.due_date ? getSmartDate(todo.due_date) : ""; // Don't show created date if no due time is set, to keep it clean
+
+  const isOverdue =
+    todo.due_date && !todo.is_completed && new Date(todo.due_date) < new Date();
+
+  const getPriorityColor = (p: number) => {
+    switch (p) {
+      case 3:
+        return theme.error; // High
+      case 2:
+        return theme.warning; // Medium
+      default:
+        return theme.success; // Low
+    }
+  };
 
   return (
     <Animated.View style={[styles.containerWrapper, rContainerStyle]}>
@@ -177,25 +209,58 @@ export function TaskItem({
                 end={{ x: 1, y: 1 }}
               >
                 <View style={styles.textContainer}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    {/* Priority Circle Indicator */}
+                    <View
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: 5,
+                        backgroundColor: getPriorityColor(todo.priority),
+                      }}
+                    />
+
+                    <Text
+                      style={[
+                        styles.text,
+                        {
+                          color: theme.text,
+                          textDecorationLine: todo.is_completed
+                            ? "line-through"
+                            : "none",
+                          opacity: todo.is_completed ? 0.6 : 1,
+                          flexShrink: 1,
+                        },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {todo.title}
+                    </Text>
+                    {/* Recurring Icon */}
+                    {todo.recurring_rule === "daily" && (
+                      <Ionicons
+                        name="repeat"
+                        size={14}
+                        color={theme.textSecondary}
+                      />
+                    )}
+                  </View>
                   <Text
                     style={[
-                      styles.text,
+                      styles.dateText,
                       {
-                        color: theme.text,
-                        textDecorationLine: todo.is_completed
-                          ? "line-through"
-                          : "none",
-                        opacity: todo.is_completed ? 0.6 : 1,
+                        color: isOverdue ? theme.error : theme.textSecondary,
+                        fontWeight: isOverdue ? "600" : "400",
                       },
                     ]}
-                    numberOfLines={1}
                   >
-                    {todo.title}
-                  </Text>
-                  <Text
-                    style={[styles.dateText, { color: theme.textSecondary }]}
-                  >
-                    {formattedDate}
+                    {displayDate}
                   </Text>
                 </View>
                 {onLongPress && !todo.is_completed && (

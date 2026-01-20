@@ -83,8 +83,13 @@ export default function Dashboard() {
 
           <View>
             {displayTasks.length === 0 && completionCount > 0 && (
-              <Text style={{ color: activeColors.textSecondary }}>
-                All caught up!
+              <Text
+                style={{
+                  color: activeColors.textSecondary,
+                  // textAlign: "center",
+                }}
+              >
+                Amazing work 🎉 {"\n"}Completed all tasks today
               </Text>
             )}
             {displayTasks.length === 0 && completionCount === 0 && (

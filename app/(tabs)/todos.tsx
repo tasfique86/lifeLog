@@ -4,10 +4,12 @@ import { useTodos } from "@/src/hooks/useTodos";
 import { useThemeStore } from "@/src/store/themeStore";
 import { Todo } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import React, { useState } from "react";
 import {
   FlatList,
   Modal,
+  Platform,
   StyleSheet,
   Switch,
   Text,
@@ -28,6 +30,8 @@ export default function TodosScreen() {
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<1 | 2 | 3>(1);
   const [isRecurring, setIsRecurring] = useState(false);
+  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const handleCreate = () => {
     if (!title.trim()) return;
@@ -37,11 +41,13 @@ export default function TodosScreen() {
       priority,
       is_completed: false,
       recurring_rule: isRecurring ? "daily" : null,
+      due_date: dueDate ? dueDate.toISOString() : undefined,
     });
     setTitle("");
     setDescription("");
     setPriority(1);
     setIsRecurring(false);
+    setDueDate(undefined);
     setModalVisible(false);
   };
   const renderItem = ({ item }: { item: Todo }) => (
@@ -135,28 +141,44 @@ export default function TodosScreen() {
                 Priority
               </Text>
               <View style={styles.priorityContainer}>
-                {[1, 2, 3].map((p) => (
-                  <TouchableOpacity
-                    key={p}
-                    onPress={() => setPriority(p as 1 | 2 | 3)}
-                    style={[
-                      styles.priorityBtn,
-                      priority === p && {
-                        backgroundColor: activeColors.primary,
-                      },
-                      { borderColor: activeColors.border },
-                    ]}
-                  >
-                    <Text
-                      style={{
-                        color: priority === p ? "#FFF" : activeColors.text,
-                        fontWeight: "600",
-                      }}
+                {[1, 2, 3].map((p) => {
+                  const getActiveColor = (val: number) => {
+                    switch (val) {
+                      case 3:
+                        return "#ef4444"; // Red
+                      case 2:
+                        return "#f97316"; // Orange
+                      default:
+                        return "#22c55e"; // Green
+                    }
+                  };
+                  const activeColor = getActiveColor(p);
+                  const isActive = priority === p;
+
+                  return (
+                    <TouchableOpacity
+                      key={p}
+                      onPress={() => setPriority(p as 1 | 2 | 3)}
+                      style={[
+                        styles.priorityBtn,
+                        isActive && {
+                          backgroundColor: activeColor,
+                          borderColor: activeColor,
+                        },
+                        !isActive && { borderColor: activeColors.border },
+                      ]}
                     >
-                      {p === 1 ? "Low" : p === 2 ? "Med" : "High"}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                      <Text
+                        style={{
+                          color: isActive ? "#FFF" : activeColors.text,
+                          fontWeight: "600",
+                        }}
+                      >
+                        {p === 1 ? "Low" : p === 2 ? "Med" : "High"}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </View>
 
@@ -172,6 +194,50 @@ export default function TodosScreen() {
                 thumbColor={isRecurring ? "#fff" : "#f4f3f4"}
               />
             </View>
+
+            {/* Time Picker Section */}
+            <View style={styles.optionRow}>
+              <Text style={[styles.optionLabel, { color: activeColors.text }]}>
+                Due Time
+              </Text>
+              {Platform.OS === "android" && (
+                <TouchableOpacity
+                  onPress={() => setShowDatePicker(true)}
+                  style={{
+                    backgroundColor: activeColors.card,
+                    padding: 8,
+                    borderRadius: 8,
+                    borderColor: activeColors.border,
+                    borderWidth: 1,
+                  }}
+                >
+                  <Text
+                    style={{ color: activeColors.primary, fontWeight: "600" }}
+                  >
+                    {dueDate
+                      ? dueDate.toLocaleTimeString(undefined, {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "Set Time"}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {showDatePicker && (
+              <DateTimePicker
+                value={dueDate || new Date()}
+                mode="time"
+                display="default"
+                onChange={(event, selectedDate) => {
+                  setShowDatePicker(false);
+                  if (selectedDate) {
+                    setDueDate(selectedDate);
+                  }
+                }}
+              />
+            )}
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
