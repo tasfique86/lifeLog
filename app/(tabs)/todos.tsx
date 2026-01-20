@@ -1,19 +1,15 @@
 import { TaskItem } from "@/src/components/TaskItem";
+import { TodoModal } from "@/src/components/TodoModal";
 import { Colors } from "@/src/constants/Colors";
 import { useTodos } from "@/src/hooks/useTodos";
 import { useThemeStore } from "@/src/store/themeStore";
 import { Todo } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import React, { useState } from "react";
 import {
   FlatList,
-  Modal,
-  Platform,
   StyleSheet,
-  Switch,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -23,33 +19,47 @@ export default function TodosScreen() {
   const { getComputedScheme } = useThemeStore();
   const theme = getComputedScheme();
   const activeColors = Colors[theme];
-  const { todos, isLoading, addTodo, toggleTodo, deleteTodo } = useTodos();
+  const { todos, isLoading, addTodo, toggleTodo, deleteTodo, updateTodo } =
+    useTodos();
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState<1 | 2 | 3>(1);
-  const [isRecurring, setIsRecurring] = useState(false);
-  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
 
-  const handleCreate = () => {
-    if (!title.trim()) return;
-    addTodo({
-      title,
-      description,
-      priority,
-      is_completed: false,
-      recurring_rule: isRecurring ? "daily" : null,
-      due_date: dueDate ? dueDate.toISOString() : undefined,
-    });
-    setTitle("");
-    setDescription("");
-    setPriority(1);
-    setIsRecurring(false);
-    setDueDate(undefined);
+  const handleSaveTodo = (data: {
+    title: string;
+    description: string;
+    priority: 1 | 2 | 3;
+    recurring_rule: "daily" | null;
+    due_date?: string;
+  }) => {
+    if (editingTodo) {
+      updateTodo({
+        id: editingTodo.id,
+        data: {
+          ...data,
+          is_completed: editingTodo.is_completed, // Keep existing status
+        },
+      });
+    } else {
+      addTodo({
+        ...data,
+        is_completed: false,
+      });
+    }
     setModalVisible(false);
+    setEditingTodo(null);
   };
+
+  const openNewTask = () => {
+    setEditingTodo(null);
+    setModalVisible(true);
+  };
+
+  const openEditTask = (todo: Todo) => {
+    setEditingTodo(todo);
+    setModalVisible(true);
+  };
+
   const renderItem = ({ item }: { item: Todo }) => (
     <TaskItem
       todo={item}
@@ -57,13 +67,7 @@ export default function TodosScreen() {
         toggleTodo({ id, is_completed: !currentStatus })
       }
       onDelete={(id) => deleteTodo(id)}
-      onLongPress={() => {
-        setTitle(item.title);
-        setDescription(item.description || "");
-        setModalVisible(true);
-        // Note: Logic for editing isn't fully implemented in the modal yet (it just creates new),
-        // but this wires up the gesture.
-      }}
+      onLongPress={() => openEditTask(item)}
     />
   );
 
@@ -73,7 +77,7 @@ export default function TodosScreen() {
     >
       <View style={styles.header}>
         <Text style={[styles.title, { color: activeColors.text }]}>Tasks</Text>
-        <TouchableOpacity onPress={() => setModalVisible(true)}>
+        <TouchableOpacity onPress={openNewTask}>
           <Ionicons name="add-circle" size={32} color={activeColors.primary} />
         </TouchableOpacity>
       </View>
@@ -92,180 +96,18 @@ export default function TodosScreen() {
         }
       />
 
-      <Modal
-        animationType="slide"
-        transparent={true}
+      <TodoModal
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View
-            style={[
-              styles.modalContent,
-              { backgroundColor: activeColors.card },
-            ]}
-          >
-            <Text style={[styles.modalTitle, { color: activeColors.text }]}>
-              New Task
-            </Text>
-
-            <TextInput
-              style={[
-                styles.input,
-                { color: activeColors.text, borderColor: activeColors.border },
-              ]}
-              placeholder="Task Title"
-              placeholderTextColor={activeColors.textSecondary}
-              value={title}
-              onChangeText={setTitle}
-            />
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  color: activeColors.text,
-                  borderColor: activeColors.border,
-                  height: 80,
-                },
-              ]}
-              placeholder="Description (Optional)"
-              placeholderTextColor={activeColors.textSecondary}
-              multiline
-              value={description}
-              onChangeText={setDescription}
-            />
-
-            {/* Priority Selector */}
-            <View style={styles.optionRow}>
-              <Text style={[styles.optionLabel, { color: activeColors.text }]}>
-                Priority
-              </Text>
-              <View style={styles.priorityContainer}>
-                {[1, 2, 3].map((p) => {
-                  const getActiveColor = (val: number) => {
-                    switch (val) {
-                      case 3:
-                        return "#ef4444"; // Red
-                      case 2:
-                        return "#f97316"; // Orange
-                      default:
-                        return "#22c55e"; // Green
-                    }
-                  };
-                  const activeColor = getActiveColor(p);
-                  const isActive = priority === p;
-
-                  return (
-                    <TouchableOpacity
-                      key={p}
-                      onPress={() => setPriority(p as 1 | 2 | 3)}
-                      style={[
-                        styles.priorityBtn,
-                        isActive && {
-                          backgroundColor: activeColor,
-                          borderColor: activeColor,
-                        },
-                        !isActive && { borderColor: activeColors.border },
-                      ]}
-                    >
-                      <Text
-                        style={{
-                          color: isActive ? "#FFF" : activeColors.text,
-                          fontWeight: "600",
-                        }}
-                      >
-                        {p === 1 ? "Low" : p === 2 ? "Med" : "High"}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-
-            {/* Recurring Toggle */}
-            <View style={styles.optionRow}>
-              <Text style={[styles.optionLabel, { color: activeColors.text }]}>
-                Repeat Daily
-              </Text>
-              <Switch
-                value={isRecurring}
-                onValueChange={setIsRecurring}
-                trackColor={{ false: "#767577", true: activeColors.primary }}
-                thumbColor={isRecurring ? "#fff" : "#f4f3f4"}
-              />
-            </View>
-
-            {/* Time Picker Section */}
-            <View style={styles.optionRow}>
-              <Text style={[styles.optionLabel, { color: activeColors.text }]}>
-                Due Time
-              </Text>
-              {Platform.OS === "android" && (
-                <TouchableOpacity
-                  onPress={() => setShowDatePicker(true)}
-                  style={{
-                    backgroundColor: activeColors.card,
-                    padding: 8,
-                    borderRadius: 8,
-                    borderColor: activeColors.border,
-                    borderWidth: 1,
-                  }}
-                >
-                  <Text
-                    style={{ color: activeColors.primary, fontWeight: "600" }}
-                  >
-                    {dueDate
-                      ? dueDate.toLocaleTimeString(undefined, {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : "Set Time"}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {showDatePicker && (
-              <DateTimePicker
-                value={dueDate || new Date()}
-                mode="time"
-                display="default"
-                onChange={(event, selectedDate) => {
-                  setShowDatePicker(false);
-                  if (selectedDate) {
-                    setDueDate(selectedDate);
-                  }
-                }}
-              />
-            )}
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                onPress={() => setModalVisible(false)}
-                style={styles.modalBtn}
-              >
-                <Text style={{ color: activeColors.textSecondary }}>
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleCreate}
-                style={[
-                  styles.modalBtn,
-                  { backgroundColor: activeColors.primary },
-                ]}
-              >
-                <Text style={{ color: "#FFF" }}>Create</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => {
+          setModalVisible(false);
+          setEditingTodo(null);
+        }}
+        onSave={handleSaveTodo}
+        initialData={editingTodo}
+      />
     </SafeAreaView>
   );
 }
-
-// ... helper components or styles ...
 
 const styles = StyleSheet.create({
   container: {
@@ -288,58 +130,5 @@ const styles = StyleSheet.create({
   emptyContainer: {
     marginTop: 40,
     alignItems: "center",
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  modalContent: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 24,
-    minHeight: 300,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 16,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    fontSize: 16,
-  },
-  modalButtons: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 16,
-  },
-  modalBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-  },
-  optionRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  optionLabel: {
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  priorityContainer: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  priorityBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    borderWidth: 1,
   },
 });

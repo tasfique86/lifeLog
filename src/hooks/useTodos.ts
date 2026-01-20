@@ -70,6 +70,25 @@ export function useTodos() {
     },
   });
 
+  const updateTodoMutation = useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: EntityId;
+      data: Partial<Omit<Todo, "id" | "created_at" | "deleted_at">>;
+    }) => {
+      const now = new Date().toISOString();
+      await todoRepo.update(id, {
+        ...data,
+        updated_at: now,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["todos"] });
+    },
+  });
+
   return {
     todos: todosQuery.data || [],
     isLoading: todosQuery.isLoading,
@@ -77,5 +96,6 @@ export function useTodos() {
     addTodo: addTodoMutation.mutate,
     toggleTodo: toggleTodoMutation.mutate,
     deleteTodo: deleteTodoMutation.mutate,
+    updateTodo: updateTodoMutation.mutate,
   };
 }
