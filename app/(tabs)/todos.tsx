@@ -31,18 +31,21 @@ export default function TodosScreen() {
     priority: 1 | 2 | 3;
     recurring_rule: "daily" | null;
     due_date?: string;
+    category_id?: string;
   }) => {
     if (editingTodo) {
       updateTodo({
         id: editingTodo.id,
         data: {
           ...data,
+          category_id: data.category_id, // Explicitly pass category_id
           is_completed: editingTodo.is_completed, // Keep existing status
         },
       });
     } else {
       addTodo({
         ...data,
+        category_id: data.category_id,
         is_completed: false,
       });
     }

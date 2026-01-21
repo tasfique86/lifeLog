@@ -209,19 +209,49 @@ export function TaskItem({
                     )}
                   </View>
 
-                  {displayTime && (
-                    <Text
-                      style={[
-                        styles.time,
-                        {
-                          color: isOverdue ? theme.error : theme.textSecondary,
-                          fontWeight: isOverdue ? "600" : "400",
-                        },
-                      ]}
-                    >
-                      {displayTime}
-                    </Text>
-                  )}
+                  <View style={styles.metaRow}>
+                    {displayTime && (
+                      <Text
+                        style={[
+                          styles.time,
+                          {
+                            color: isOverdue
+                              ? theme.error
+                              : theme.textSecondary,
+                            fontWeight: isOverdue ? "600" : "400",
+                          },
+                        ]}
+                      >
+                        {displayTime}
+                      </Text>
+                    )}
+
+                    {todo.category && (
+                      <View
+                        style={[
+                          styles.categoryChip,
+                          {
+                            backgroundColor: todo.category.color + "20", // 12% opacity
+                            borderColor: todo.category.color,
+                          },
+                        ]}
+                      >
+                        <Ionicons
+                          name={todo.category.icon as any}
+                          size={10}
+                          color={todo.category.color}
+                        />
+                        <Text
+                          style={[
+                            styles.categoryText,
+                            { color: todo.category.color },
+                          ]}
+                        >
+                          {todo.category.name}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
 
                 {/* Right */}
@@ -299,9 +329,26 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     flexShrink: 1,
   },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 4,
+  },
+  categoryChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 8,
+    gap: 4,
+  },
+  categoryText: {
+    fontSize: 10,
+    fontWeight: "600",
+  },
   time: {
     fontSize: 12,
-    marginTop: 2,
   },
   editButton: {
     padding: 8,

@@ -1,12 +1,15 @@
 import { Colors } from "@/src/constants/Colors";
+import { useCategories } from "@/src/hooks/useCategories";
 import { useThemeStore } from "@/src/store/themeStore";
 import { Todo } from "@/src/types";
+import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import React, { useEffect, useState } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
   Platform,
+  ScrollView,
   StyleSheet,
   Switch,
   Text,
@@ -24,6 +27,7 @@ interface TodoModalProps {
     priority: 1 | 2 | 3;
     recurring_rule: "daily" | null;
     due_date?: string;
+    category_id?: string;
   }) => void;
   initialData?: Todo | null;
 }
@@ -37,6 +41,7 @@ export function TodoModal({
   const { getComputedScheme } = useThemeStore();
   const theme = getComputedScheme();
   const activeColors = Colors[theme];
+  const { categories } = useCategories("task");
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -44,6 +49,9 @@ export function TodoModal({
   const [isRecurring, setIsRecurring] = useState(false);
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<
+    string | undefined
+  >(undefined);
 
   // Load initial data when valid, otherwise reset
   useEffect(() => {
@@ -56,6 +64,7 @@ export function TodoModal({
         setDueDate(
           initialData.due_date ? new Date(initialData.due_date) : undefined,
         );
+        setSelectedCategoryId(initialData.category_id);
       } else {
         resetForm();
       }
@@ -68,6 +77,7 @@ export function TodoModal({
     setPriority(1);
     setIsRecurring(false);
     setDueDate(undefined);
+    setSelectedCategoryId(undefined);
   };
 
   const handleSave = () => {
@@ -79,6 +89,7 @@ export function TodoModal({
       priority,
       recurring_rule: isRecurring ? "daily" : null,
       due_date: dueDate ? dueDate.toISOString() : undefined,
+      category_id: selectedCategoryId,
     });
 
     // Close & Reset is handled by parent or effect, but good to ensure
@@ -137,8 +148,54 @@ export function TodoModal({
             onChangeText={setDescription}
           />
 
-          {/* Priority Selector */}
+          {/* Category Selector */}
           <View style={styles.optionRow}>
+            <Text style={[styles.optionLabel, { color: activeColors.text }]}>
+              Category
+            </Text>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryContainer}
+          >
+            {categories.map((cat) => {
+              const isActive = selectedCategoryId === cat.id;
+              return (
+                <TouchableOpacity
+                  key={cat.id}
+                  onPress={() =>
+                    setSelectedCategoryId(isActive ? undefined : cat.id)
+                  }
+                  style={[
+                    styles.categoryChip,
+                    {
+                      borderColor: cat.color,
+                      backgroundColor: isActive ? cat.color : "transparent",
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={cat.icon as any}
+                    size={16}
+                    color={isActive ? "#FFF" : cat.color}
+                  />
+                  <Text
+                    style={{
+                      color: isActive ? "#FFF" : cat.color,
+                      fontWeight: "600",
+                      fontSize: 12,
+                    }}
+                  >
+                    {cat.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          {/* Priority Selector */}
+          <View style={[styles.optionRow, { marginTop: 16 }]}>
             <Text style={[styles.optionLabel, { color: activeColors.text }]}>
               Priority
             </Text>
@@ -318,5 +375,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 6,
     borderWidth: 1,
+  },
+  categoryContainer: {
+    paddingVertical: 8,
+    gap: 8,
+  },
+  categoryChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 6,
+    marginRight: 8,
   },
 });

@@ -15,17 +15,48 @@ export class SqliteTodoRepository implements TodoRepository {
 
   async getAll(): Promise<Todo[]> {
     const db = await this.getDatabase();
-    // Only fetch non-deleted items
-    const result = await db.getAllAsync<Todo>(
-      `SELECT * FROM todos 
-       WHERE deleted_at IS NULL 
+    // Only fetch non-deleted items with category details
+    const result = await db.getAllAsync<any>(
+      `SELECT 
+        t.*,
+        c.name as category_name,
+        c.icon as category_icon,
+        c.color as category_color,
+        c.type as category_type
+       FROM todos t
+       LEFT JOIN categories c ON t.category_id = c.id
+       WHERE t.deleted_at IS NULL 
        ORDER BY 
-         is_completed ASC, 
-         priority DESC, 
-         COALESCE(due_date, '9999-12-31') ASC, 
-         created_at DESC`,
+         t.is_completed ASC, 
+         t.priority DESC, 
+         COALESCE(t.due_date, '9999-12-31') ASC, 
+         t.created_at DESC`,
     );
-    return result;
+
+    // Map result to Todo objects with nested category
+    return result.map((row) => {
+      const {
+        category_name,
+        category_icon,
+        category_color,
+        category_type,
+        ...todoFields
+      } = row;
+      return {
+        ...todoFields,
+        category: todoFields.category_id
+          ? {
+              id: todoFields.category_id,
+              name: category_name,
+              icon: category_icon,
+              color: category_color,
+              type: category_type,
+              created_at: "", // Placeholder
+              updated_at: "", // Placeholder
+            }
+          : undefined,
+      };
+    });
   }
 
   async getById(id: EntityId): Promise<Todo | null> {

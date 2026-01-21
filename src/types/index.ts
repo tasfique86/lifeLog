@@ -17,6 +17,7 @@ export interface Todo extends BaseEntity {
   recurring_rule?: string | null; // e.g., 'daily', 'weekly'
   tags?: string; // Comma-separated tags
   category_id?: EntityId; // Link to Category
+  category?: Category; // Hydrated Category object
 }
 
 export interface TodoHistory extends BaseEntity {
@@ -27,7 +28,7 @@ export interface TodoHistory extends BaseEntity {
 
 export interface Category extends BaseEntity {
   name: string;
-  type: "income" | "expense";
+  type: "income" | "expense" | "task";
   icon: string; // Icon name
   color: string; // Hex code
 }
