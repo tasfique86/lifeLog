@@ -63,6 +63,57 @@ const MIGRATIONS = [
     FOREIGN KEY (todo_id) REFERENCES todos (id)
   );
   `,
+
+  // Migration 2: Plans Feature
+  `
+  CREATE TABLE IF NOT EXISTS plan_statuses (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL,
+    color TEXT NOT NULL,
+    sort_order INTEGER DEFAULT 0,
+    is_system INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS plans (
+    id TEXT PRIMARY KEY NOT NULL,
+    title TEXT NOT NULL,
+    category_id TEXT,
+    status_id TEXT NOT NULL,
+    date TEXT NOT NULL, -- YYYY-MM-DD
+    priority INTEGER DEFAULT 1,
+    planned_duration_minutes INTEGER,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    FOREIGN KEY (category_id) REFERENCES categories (id),
+    FOREIGN KEY (status_id) REFERENCES plan_statuses (id)
+  );
+
+  CREATE TABLE IF NOT EXISTS plan_executions (
+    id TEXT PRIMARY KEY NOT NULL,
+    plan_id TEXT NOT NULL,
+    actual_start_time TEXT,
+    actual_end_time TEXT,
+    focus_level INTEGER,
+    distraction_count INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted_at TEXT,
+    FOREIGN KEY (plan_id) REFERENCES plans (id)
+  );
+  `,
+
+  // Migration 3: Seed Plan Statuses
+  `
+  INSERT OR IGNORE INTO plan_statuses (id, name, color, sort_order, is_system, created_at, updated_at) VALUES 
+  ('status_created', 'Created', '#3b82f6', 1, 1, '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z'),
+  ('status_in_progress', 'In Progress', '#eab308', 2, 1, '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z'),
+  ('status_on_hold', 'On Hold', '#f97316', 3, 1, '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z'),
+  ('status_completed', 'Completed', '#22c55e', 4, 1, '2024-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z');
+  `,
 ];
 
 export const DB_NAME = "lifelog.db";

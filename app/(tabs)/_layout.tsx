@@ -97,7 +97,7 @@ export default function TabLayout() {
             borderRadius: 50,
             backgroundColor: "transparent",
 
-            borderWidth: Platform.OS === "android" ? 0.6 : 0,
+            borderWidth: Platform.OS === "android" ? 1.5 : 0,
             borderColor: isDark ? "#334155" : "#BFDBFE",
 
             elevation: 5,
@@ -167,20 +167,6 @@ export default function TabLayout() {
         />
 
         <Tabs.Screen
-          name="expenses"
-          options={{
-            tabBarButton: CustomTabBarButton,
-            tabBarIcon: ({ color, focused }) => (
-              <TabBarIcon
-                focused={focused}
-                name={focused ? "wallet" : "wallet-outline"}
-                color={color}
-              />
-            ),
-          }}
-        />
-
-        <Tabs.Screen
           name="plans"
           options={{
             tabBarButton: CustomTabBarButton,
@@ -188,6 +174,20 @@ export default function TabLayout() {
               <TabBarIcon
                 focused={focused}
                 name={focused ? "calendar" : "calendar-outline"}
+                color={color}
+              />
+            ),
+          }}
+        />
+
+        <Tabs.Screen
+          name="expenses"
+          options={{
+            tabBarButton: CustomTabBarButton,
+            tabBarIcon: ({ color, focused }) => (
+              <TabBarIcon
+                focused={focused}
+                name={focused ? "wallet" : "wallet-outline"}
                 color={color}
               />
             ),

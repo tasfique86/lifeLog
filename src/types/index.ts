@@ -46,3 +46,30 @@ export interface UserProfile {
   currency: string;
   isRegistered: boolean;
 }
+
+export interface PlanStatus extends BaseEntity {
+  name: string;
+  color: string;
+  sort_order: number;
+  is_system: boolean;
+}
+
+export interface Plan extends BaseEntity {
+  title: string;
+  category_id?: EntityId;
+  status_id: EntityId;
+  date: string; // YYYY-MM-DD
+  priority: number;
+  planned_duration_minutes?: number;
+  // Relations
+  category?: Category;
+  status?: PlanStatus;
+}
+
+export interface PlanExecution extends BaseEntity {
+  plan_id: EntityId;
+  actual_start_time?: string;
+  actual_end_time?: string;
+  focus_level?: number;
+  distraction_count: number;
+}

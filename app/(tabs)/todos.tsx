@@ -22,6 +22,10 @@ export default function TodosScreen() {
   const { todos, isLoading, addTodo, toggleTodo, deleteTodo, updateTodo } =
     useTodos();
 
+  const filteredTodos = todos.filter(
+    (todo) => !todo.is_completed || todo.recurring_rule,
+  );
+
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
 
@@ -86,7 +90,7 @@ export default function TodosScreen() {
       </View>
 
       <FlatList
-        data={todos}
+        data={filteredTodos}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}

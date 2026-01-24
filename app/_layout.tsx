@@ -72,8 +72,9 @@ export default function RootLayout() {
     if (!user && !inOnboarding) {
       console.log("Redirecting to Onboarding...");
       router.replace("/onboarding");
-    } else if (user && !inTabsGroup) {
-      // Logic update: If logged in and NOT in tabs (e.g. root or onboarding), go to tabs
+    } else if (user && (inOnboarding || !segments[0])) {
+      // If logged in but in onboarding or root, go to tabs.
+      // Allow other routes like /plan/* to persist.
       console.log("Redirecting to Dashboard...");
       router.replace("/(tabs)");
     }

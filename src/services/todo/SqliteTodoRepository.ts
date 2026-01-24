@@ -4,13 +4,8 @@ import { SQLiteDatabase } from "expo-sqlite";
 import { TodoRepository } from "./TodoRepository";
 
 export class SqliteTodoRepository implements TodoRepository {
-  private db: SQLiteDatabase | null = null;
-
   private async getDatabase(): Promise<SQLiteDatabase> {
-    if (!this.db) {
-      this.db = await getDb();
-    }
-    return this.db;
+    return await getDb();
   }
 
   async getAll(): Promise<Todo[]> {
