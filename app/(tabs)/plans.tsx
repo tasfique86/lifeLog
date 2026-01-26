@@ -1,4 +1,5 @@
 import { PlanCard } from "@/components/plan/PlanCard";
+import { PlanDetailsModal } from "@/components/plan/PlanDetailsModal";
 import { PlanModal } from "@/components/plan/PlanModal";
 import { Colors } from "@/constants/Colors";
 import { usePlans } from "@/hooks/usePlans";
@@ -28,10 +29,11 @@ export default function Plans() {
   const [selectedStatusId, setSelectedStatusId] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
+  const [detailsModalVisible, setDetailsModalVisible] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
 
   // Data
-  const today = new Date().toISOString().split("T")[0];
-  const { plans, services, actions } = usePlans(today);
+  const { plans, services, actions } = usePlans(); // Fetch all
   const { statuses } = services;
 
   // Derived State
@@ -64,7 +66,15 @@ export default function Plans() {
   };
 
   const handlePressPlan = (plan: Plan) => {
-    router.push(`/plan/${plan.id}`);
+    setSelectedPlan(plan);
+    setDetailsModalVisible(true);
+  };
+
+  const handleUpdatePlan = (id: string, updates: any) => {
+    actions.updatePlan({
+      id,
+      updates,
+    });
   };
 
   return (
@@ -184,6 +194,16 @@ export default function Plans() {
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         onSave={handleCreatePlan}
+      />
+
+      <PlanDetailsModal
+        visible={detailsModalVisible}
+        onClose={() => {
+          setDetailsModalVisible(false);
+          setSelectedPlan(null);
+        }}
+        onSave={handleUpdatePlan}
+        plan={selectedPlan}
       />
     </SafeAreaView>
   );

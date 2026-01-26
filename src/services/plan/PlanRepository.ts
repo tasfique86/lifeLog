@@ -2,7 +2,7 @@ import { EntityId, Plan, PlanExecution, PlanStatus } from "@/src/types";
 
 export interface PlanRepository {
   // Plan Operations
-  getPlansByDate(date: string): Promise<Plan[]>;
+  getPlans(date?: string): Promise<Plan[]>;
   getPlanById(id: EntityId): Promise<Plan | null>;
   createPlan(
     plan: Omit<Plan, "id" | "created_at" | "updated_at">,

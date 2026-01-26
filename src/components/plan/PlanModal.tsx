@@ -3,9 +3,12 @@ import { useCategories } from "@/hooks/useCategories";
 import { useThemeStore } from "@/store/themeStore";
 import { Plan } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import React, { useEffect, useState } from "react";
 import {
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -37,7 +40,9 @@ export function PlanModal({
 
   const [title, setTitle] = useState("");
   const [categoryId, setCategoryId] = useState<string>("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showPicker, setShowPicker] = useState(false);
+  const [pickerMode, setPickerMode] = useState<"date" | "time">("date");
   const [priority, setPriority] = useState<1 | 2 | 3>(2);
   const [note, setNote] = useState("");
 
@@ -45,9 +50,12 @@ export function PlanModal({
     if (initialData) {
       setTitle(initialData.title);
       setCategoryId(initialData.category_id || "");
-      setDate(initialData.date);
+      // Parse YYYY-MM-DD to local date
+      if (initialData.date) {
+        const [y, m, d] = initialData.date.split("-").map(Number);
+        setSelectedDate(new Date(y, m - 1, d));
+      }
       setPriority(initialData.priority as 1 | 2 | 3);
-      // Note is not in Plan type yet, assume empty or fetch if added later
       setNote("");
     } else {
       resetForm();
@@ -57,19 +65,46 @@ export function PlanModal({
   const resetForm = () => {
     setTitle("");
     setCategoryId("");
-    setDate(new Date().toISOString().split("T")[0]);
+    setSelectedDate(new Date());
     setPriority(2);
     setNote("");
   };
 
+  const onChangeDate = (event: any, date?: Date) => {
+    if (Platform.OS === "android") {
+      setShowPicker(false);
+    }
+    if (date) {
+      setSelectedDate(date);
+    }
+  };
+
   const handleSave = () => {
     if (!title.trim()) return;
+    // Format date as YYYY-MM-DD for backend
+    const dateStr =
+      selectedDate.getFullYear() +
+      "-" +
+      String(selectedDate.getMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(selectedDate.getDate()).padStart(2, "0");
+
+    // Check if time is non-default (optional enhancement, here we just pass note)
+    // Maybe append time to note if user wants time persistence
+    const timeStr = selectedDate.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const noteWithTime = note
+      ? `${note}\n[Time: ${timeStr}]`
+      : `[Time: ${timeStr}]`;
+
     onSave({
       title,
       category_id: categoryId || undefined,
       priority,
-      date,
-      note, // Pass it up, though main create might ignore it if type doesn't support it yet
+      date: dateStr,
+      note: noteWithTime,
     });
     onClose();
   };
@@ -81,8 +116,20 @@ export function PlanModal({
       visible={visible}
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
-        <View style={[styles.modal, { backgroundColor: theme.background }]}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.overlay}
+      >
+        <View
+          style={[
+            styles.modal,
+            {
+              backgroundColor: theme.background,
+              borderWidth: 1.5,
+              borderColor: theme.border,
+            },
+          ]}
+        >
           {/* Header */}
           <View style={styles.header}>
             <Text style={[styles.title, { color: theme.text }]}>
@@ -144,21 +191,96 @@ export function PlanModal({
               </ScrollView>
             </Section>
 
-            {/* Date + Reminder */}
-            <Section title="When" theme={theme}>
-              <Input
-                value={date}
-                onChangeText={setDate}
-                placeholder="YYYY-MM-DD"
-                theme={theme}
-              />
+            {/* Date + Time */}
+            <Section title="Schedule" theme={theme}>
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <TouchableOpacity
+                  style={[
+                    styles.input,
+                    {
+                      flex: 1,
+                      justifyContent: "center",
+                      backgroundColor: theme.card,
+                      borderColor: theme.border,
+                    },
+                  ]}
+                  onPress={() => {
+                    if (showPicker && pickerMode === "date") {
+                      setShowPicker(false);
+                    } else {
+                      setPickerMode("date");
+                      setShowPicker(true);
+                    }
+                  }}
+                >
+                  <Text style={{ color: theme.text }}>
+                    {selectedDate.toLocaleDateString()}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.input,
+                    {
+                      flex: 1,
+                      justifyContent: "center",
+                      backgroundColor: theme.card,
+                      borderColor: theme.border,
+                    },
+                  ]}
+                  onPress={() => {
+                    if (showPicker && pickerMode === "time") {
+                      setShowPicker(false);
+                    } else {
+                      setPickerMode("time");
+                      setShowPicker(true);
+                    }
+                  }}
+                >
+                  <Text style={{ color: theme.text }}>
+                    {selectedDate.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {showPicker && (
+                <View>
+                  <DateTimePicker
+                    value={selectedDate}
+                    mode={pickerMode}
+                    is24Hour={true}
+                    display={Platform.OS === "ios" ? "spinner" : "default"}
+                    onChange={onChangeDate}
+                    themeVariant={activeScheme}
+                    textColor={theme.text}
+                  />
+                  {Platform.OS === "ios" && (
+                    <TouchableOpacity
+                      style={[
+                        styles.btn,
+                        { backgroundColor: theme.card, marginTop: 8 },
+                      ]}
+                      onPress={() => setShowPicker(false)}
+                    >
+                      <Text
+                        style={{ color: theme.primary, fontWeight: "bold" }}
+                      >
+                        Done
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+
               <View style={styles.reminderRow}>
                 <Ionicons name="alarm-outline" size={20} color={theme.text} />
                 <Text style={{ color: theme.text, flex: 1, marginLeft: 8 }}>
                   Reminder
                 </Text>
                 <Ionicons name="toggle" size={24} color={theme.textSecondary} />
-                {/* Mock Toggle */}
               </View>
             </Section>
 
@@ -237,7 +359,7 @@ export function PlanModal({
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

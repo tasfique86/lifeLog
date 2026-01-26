@@ -13,8 +13,7 @@ export function usePlans(date?: string) {
 
   const plansQuery = useQuery({
     queryKey,
-    queryFn: () => (date ? planRepo.getPlansByDate(date) : Promise.resolve([])),
-    enabled: !!date,
+    queryFn: () => planRepo.getPlans(date),
   });
 
   const statusesQuery = useQuery({

@@ -11,11 +11,10 @@ export class SqlitePlanRepository implements PlanRepository {
 
   // --- Plan Operations ---
 
-  async getPlansByDate(date: string): Promise<Plan[]> {
+  async getPlans(date?: string): Promise<Plan[]> {
     const db = await this.getDatabase();
     // Fetch plans with Category and Status details
-    const rows = await db.getAllAsync<any>(
-      `SELECT 
+    let query = `SELECT 
         p.*,
         c.name as category_name,
         c.icon as category_icon,
@@ -28,10 +27,17 @@ export class SqlitePlanRepository implements PlanRepository {
        FROM plans p
        LEFT JOIN categories c ON p.category_id = c.id
        INNER JOIN plan_statuses s ON p.status_id = s.id
-       WHERE p.date = ? AND p.deleted_at IS NULL
-       ORDER BY p.priority DESC, p.created_at ASC`,
-      [date],
-    );
+       WHERE p.deleted_at IS NULL`;
+
+    const params: any[] = [];
+    if (date) {
+      query += ` AND p.date = ?`;
+      params.push(date);
+    }
+
+    query += ` ORDER BY p.date ASC, p.priority DESC, p.created_at ASC`;
+
+    const rows = await db.getAllAsync<any>(query, params);
 
     return rows.map((row) => {
       const {

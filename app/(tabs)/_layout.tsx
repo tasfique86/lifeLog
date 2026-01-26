@@ -127,7 +127,7 @@ export default function TabLayout() {
                   {
                     backgroundColor: isDark
                       ? "rgba(30,41,59,0.5)"
-                      : "rgba(255,255,255,0.4)",
+                      : "rgba(255,255,255,0.8)",
                   },
                 ]}
               />
