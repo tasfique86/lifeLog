@@ -5,6 +5,7 @@ import { useTodos } from "@/src/hooks/useTodos";
 import { useThemeStore } from "@/src/store/themeStore";
 import { Todo } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import React, { useState } from "react";
 import {
   FlatList,
@@ -83,7 +84,17 @@ export default function TodosScreen() {
       style={[styles.container, { backgroundColor: activeColors.background }]}
     >
       <View style={styles.header}>
-        <Text style={[styles.title, { color: activeColors.text }]}>Tasks</Text>
+        <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
+          <Text style={[styles.title, { color: activeColors.text }]}>
+            Tasks
+          </Text>
+          <TouchableOpacity
+            style={{ marginLeft: 5 }}
+            onPress={() => router.push("/todos/calenderTaskView")}
+          >
+            <Ionicons name="calendar" size={24} color={activeColors.primary} />
+          </TouchableOpacity>
+        </View>
         <TouchableOpacity onPress={openNewTask}>
           <Ionicons name="add-circle" size={32} color={activeColors.primary} />
         </TouchableOpacity>
